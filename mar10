@@ -1,0 +1,71 @@
+#include <iostream>
+#include <windows.h>
+
+#define NUM_PHILOSOPHERS 5
+
+HANDLE forks[NUM_PHILOSOPHERS];
+
+DWORD WINAPI philosopher(LPVOID arg) {
+    int id = *(int*)arg;
+    int left_fork = id;
+    int right_fork = (id + 1) % NUM_PHILOSOPHERS;
+
+    while (true) {
+        // Философ размышляет
+        std::cout << "Философ " << id << " размышляет." << std::endl;
+        Sleep(1000);
+
+        // Философ берет вилки в обратном порядке
+        if (id == NUM_PHILOSOPHERS - 1) {
+            WaitForSingleObject(forks[left_fork], INFINITE);
+            WaitForSingleObject(forks[right_fork], INFINITE);
+        }
+        else {
+            WaitForSingleObject(forks[right_fork], INFINITE);
+            WaitForSingleObject(forks[left_fork], INFINITE);
+        }
+
+        // Философ ест
+        std::cout << "Философ " << id << " начал есть." << std::endl;
+        Sleep(1000);
+        std::cout << "Философ " << id << " закончил есть и освободил вилки." << std::endl;
+
+        // Философ освобождает вилки
+        ReleaseMutex(forks[left_fork]);
+        ReleaseMutex(forks[right_fork]);
+    }
+
+    return 0;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    HANDLE philosophers[NUM_PHILOSOPHERS];
+    int philosopher_ids[NUM_PHILOSOPHERS];
+
+    // Инициализация мьютексов для вилок
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+        forks[i] = CreateMutex(nullptr, FALSE, nullptr);
+    }
+
+    // Создание потоков для философов
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+        philosopher_ids[i] = i;
+        philosophers[i] = CreateThread(NULL, 0, philosopher, &philosopher_ids[i], 0, NULL);
+    }
+
+    // Ожидание завершения потоков
+    WaitForMultipleObjects(NUM_PHILOSOPHERS, philosophers, TRUE, INFINITE);
+
+    // Закрытие дескрипторов потоков
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+        CloseHandle(philosophers[i]);
+    }
+
+    // Уничтожение мьютексов для вилок
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+        CloseHandle(forks[i]);
+    }
+
+    return 0;
+}
