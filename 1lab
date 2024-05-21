@@ -1,0 +1,23 @@
+#include <iostream>
+#define HAVE_STRUCT_TIMESPEC
+#include <thread>
+#include <pthread.h>
+
+void printText() {
+    for (int i = 0; i < 10; i++) {
+        std::cout << "Это строка номер " << i + 1 << std::endl;
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    std::thread thread(printText);
+
+    for (int i = 0; i < 10; i++) {
+        std::cout << "Это строка номер " << i + 1 << std::endl;
+    }
+
+    thread.join();
+
+    return 0;
+}
