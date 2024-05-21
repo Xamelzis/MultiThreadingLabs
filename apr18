@@ -1,0 +1,59 @@
+#define HAVE_STRUCT_TIMESPEC
+
+#include <thread>
+#include <mutex>
+#include <list>
+#include <algorithm>
+#include <string>
+#include <iostream>
+#include <chrono>
+
+struct Entry {
+    std::string data;
+    mutable std::mutex mutex;
+
+    Entry(const std::string& str = "") : data(str) {}
+};
+
+std::list<Entry> strList;
+std::mutex listMutex;
+
+void sortListPeriodically() {
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::lock_guard<std::mutex> lock(listMutex);
+        strList.sort([](const Entry& a, const Entry& b) { return a.data < b.data; });
+    }
+}
+
+int main() {
+    std::thread sortThread(sortListPeriodically);
+
+    while (true) {
+        std::string input;
+        std::getline(std::cin, input);
+
+        if (input.empty()) {
+            std::lock_guard<std::mutex> lock(listMutex);
+            for (const auto& entry : strList) {
+                std::lock_guard<std::mutex> entryLock(entry.mutex);
+                std::cout << entry.data << std::endl;
+            }
+        }
+        else {
+            while (input.size() > 80) {
+                std::lock_guard<std::mutex> lock(listMutex);
+                strList.emplace_front(input.substr(0, 80));
+                input = input.substr(80);
+            }
+            std::lock_guard<std::mutex> lock(listMutex);
+            strList.emplace_front(input);
+        }
+    }
+
+    sortThread.join();
+
+    return 0;
+}
+
+
