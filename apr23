@@ -1,0 +1,52 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <string>
+#include <vector>
+#include <thread>
+#include <chrono>
+#include <list>
+#include <mutex>
+
+// Глобальные переменные для списка и мьютекса
+std::list<std::string> sortedList;
+std::mutex listMutex;
+
+void sleepSort(const std::string& str) {
+    // Спим пропорционально длине строки
+    std::this_thread::sleep_for(std::chrono::milliseconds(str.length() * 100));
+    // Блокируем мьютекс и добавляем строку в сортированный список
+    std::lock_guard<std::mutex> lock(listMutex);
+    sortedList.push_back(str);
+}
+
+int main() {
+    std::vector<std::string> strings;
+    std::string input;
+
+    // Чтение строк с входа до получения пустой строки
+    while (true) {
+        std::getline(std::cin, input);
+        if (input.empty()) {
+            break;
+        }
+        strings.push_back(input);
+    }
+
+    // Создание потоков для каждой строки
+    std::vector<std::thread> threads;
+    for (const auto& str : strings) {
+        threads.emplace_back(sleepSort, str);
+    }
+
+    // Ожидание завершения всех потоков
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    // Вывод содержимого списка после завершения всех потоков
+    for (const auto& str : sortedList) {
+        std::cout << str << std::endl;
+    }
+
+    return 0;
+}
