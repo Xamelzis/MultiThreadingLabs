@@ -1,0 +1,37 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <thread>
+#include <semaphore.h>
+
+// Объявление семафоров
+sem_t semMain;
+sem_t semThread;
+
+void printText(const std::string& threadName, sem_t& mySem, sem_t& otherSem) {
+    for (int i = 0; i < 5; ++i) {
+        sem_wait(&mySem); // Ожидание своего семафора
+        std::cout << "String #" << i + 1 << " " << threadName << std::endl;
+        sem_post(&otherSem); // Сигнализация другому потоку
+    }
+}
+
+int main() {
+    // Инициализация семафоров
+    sem_init(&semMain, 0, 1); // Начальное значение 1 для основного потока
+    sem_init(&semThread, 0, 0); // Начальное значение 0 для второго потока
+
+    // Создание второго потока
+    std::thread thread2(printText, "2nd thread", std::ref(semThread), std::ref(semMain));
+
+    // Основной поток печатает текст
+    printText("main", semMain, semThread);
+
+    // Ожидание завершения второго потока
+    thread2.join();
+
+    // Уничтожение семафоров
+    sem_destroy(&semMain);
+    sem_destroy(&semThread);
+
+    return 0;
+}
