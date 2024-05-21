@@ -1,0 +1,53 @@
+#define HAVE_STRUCT_TIMESPEC
+
+
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <list>
+#include <algorithm>
+#include <string>
+#include <chrono>
+
+std::mutex listMutex;
+std::list<std::string> strList;
+
+void sortListPeriodically() {
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // Пауза на 5 секунд
+
+        std::lock_guard<std::mutex> lock(listMutex); // Захватываем мьютекс для доступа к списку
+        strList.sort(); // Сортировка списка
+    }
+}
+
+int main() {
+
+    std::cout << "Enter line:" << std::endl;
+    std::thread sortThread(sortListPeriodically); // Запуск потока для периодической сортировки
+
+    while (true) {
+        std::string input;
+        std::getline(std::cin, input); // Считываем ввод пользователя
+
+        if (input.empty()) { // Если строка пустая, выводим текущее состояние списка
+            std::lock_guard<std::mutex> lock(listMutex); // Захватываем мьютекс для доступа к списку
+            for (const auto& str : strList) {
+                std::cout << str << std::endl;
+            }
+        }
+        else {
+            // Разбиваем строку на подстроки, если она длиннее 80 символов
+            std::lock_guard<std::mutex> lock(listMutex); // Захватываем мьютекс для доступа к списку
+            while (input.size() > 80) {
+                strList.push_front(input.substr(0, 80));
+                input = input.substr(80);
+            }
+            strList.push_front(input); // Добавляем строку в начало списка
+        }
+    }
+
+    sortThread.join(); // Дожидаемся завершения потока сортировки
+
+    return 0;
+}
