@@ -1,0 +1,25 @@
+#include <iostream>
+#define HAVE_STRUCT_TIMESPEC
+#include <thread>
+#include <pthread.h>
+
+void* printText(void*) {
+    for (int i = 0; i < 10; i++) {
+        std::cout << "Это строка номер " << i + 1 << std::endl;
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t thread;
+    pthread_create(&thread, NULL, printText, NULL); // Создание дополнительного потока
+
+    // Основной поток продолжает свою работу
+    for (int i = 0; i < 10; i++) {
+        std::cout << "Это строка номер " << i + 1 << std::endl;
+    }
+
+    pthread_join(thread, NULL); // Ожидание завершения дополнительного потока
+
+    return 0;
+}
