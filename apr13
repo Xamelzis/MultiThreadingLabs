@@ -1,0 +1,46 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <thread>
+#include <pthread.h>
+
+pthread_mutex_t mutex;
+pthread_cond_t cond;
+bool isMainTurn = true;
+
+void printText(const std::string& threadName, bool isMain) {
+    for (int i = 0; i < 5; i++) {
+        pthread_mutex_lock(&mutex); // Блокировка мьютекса
+
+        while (isMain != isMainTurn) {
+            pthread_cond_wait(&cond, &mutex); // Ожидание на условной переменной
+        }
+
+        std::cout << " String # " << i + 1 << "  " << threadName << std::endl;
+
+        isMainTurn = !isMainTurn; // Переключение очередности
+        pthread_cond_signal(&cond); // Сигнализация условной переменной
+
+        pthread_mutex_unlock(&mutex); // Разблокировка мьютекса
+    }
+}
+
+int main() {
+    // Инициализация мьютекса и условной переменной
+    pthread_mutex_init(&mutex, nullptr);
+    pthread_cond_init(&cond, nullptr);
+
+    // Создание второго потока
+    std::thread thread2(printText, "2-nd thread", false);
+
+    // Основной поток печатает текст
+    printText("main", true);
+
+    // Ожидание завершения второго потока
+    thread2.join();
+
+    // Уничтожение мьютекса и условной переменной
+    pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&mutex);
+
+    return 0;
+}
