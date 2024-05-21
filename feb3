@@ -1,0 +1,30 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <thread>
+#include <pthread.h>
+#include <vector>
+#include <chrono>
+
+void printSequence(const std::vector<std::string>& sequence, const std::string& threadName) {
+    for (const auto& str : sequence) {
+        std::cout << threadName << ": " << str << std::endl;
+    }
+}
+
+int main() {
+     // Определение последовательностей строк для каждого потока
+    std::vector<std::string> sequence1 = { "Line 1 from sequence 1", "Line 2 from sequence 1", "Line 3 from sequence 1" };
+    std::vector<std::string> sequence2 = { "Line 1 from sequence 2", "Line 2 from sequence 2", "Line 3 from sequence 2" };
+    std::vector<std::string> sequence3 = { "Line 1 from sequence 3", "Line 2 from sequence 3", "Line 3 from sequence 3" };
+    std::vector<std::string> sequence4 = { "Line 1 from sequence 4", "Line 2 from sequence 4", "Line 3 from sequence 4" };
+
+    printSequence(sequence1, "main");
+    std::thread thread2(printSequence, sequence2, "2-nd thread");
+    std::thread thread3(printSequence, sequence3, "3-rd thread");
+    std::thread thread4(printSequence, sequence4, "4-th thread");
+
+    thread2.join();
+    thread3.join();
+    thread4.join();
+    return 0;
+}
