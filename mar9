@@ -1,0 +1,55 @@
+#include <iostream>
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <cmath>
+#include <signal.h>
+
+std::atomic<bool> terminateFlag(false);
+
+void sigintHandler(int signum) {
+    std::cout << "Received SIGINT signal. Terminating..." << std::endl;
+    terminateFlag.store(true);
+}
+
+void calculatePi(int start, int end, double& sum) {
+    for (int i = start; i < end; ++i) {
+        sum += 1.0 / (2 * i + 1) * pow(-1, i);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    signal(SIGINT, sigintHandler);
+
+    if (argc != 2) {
+        std::cout << "Usage: program <num_threads>" << std::endl;
+        return 1;
+    }
+
+    int numThreads = std::stoi(argv[1]);
+    std::vector<std::thread> threads;
+    std::vector<double> partialSums(numThreads, 0.0);
+
+    int iterations = 100000000;
+    int iterationsPerThread = iterations / numThreads;
+
+    for (int i = 0; i < numThreads; ++i) {
+        int start = i * iterationsPerThread;
+        int end = (i + 1) * iterationsPerThread;
+        threads.emplace_back(calculatePi, start, end, std::ref(partialSums[i]));
+    }
+
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    double totalSum = 0.0;
+    for (const auto& partialSum : partialSums) {
+        totalSum += partialSum;
+    }
+
+    double pi = 4 * totalSum;
+    std::cout << "Value of Pi: " << pi << std::endl;
+
+    return 0;
+}
