@@ -1,0 +1,33 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <thread>
+#include <chrono>
+
+void sleepSort(const std::string& str) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(str.length() * 100));
+    std::cout << str << std::endl;
+}
+
+int main() {
+    std::vector<std::string> strings;
+    std::string input;
+
+    // Чтение строк с входа
+    while (std::cin >> input) {
+        strings.push_back(input);
+    }
+
+    // Создание потоков для каждой строки
+    std::vector<std::thread> threads;
+    for (const auto& str : strings) {
+        threads.emplace_back(sleepSort, str);
+    }
+
+    // Ожидание завершения всех потоков
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return 0;
+}
