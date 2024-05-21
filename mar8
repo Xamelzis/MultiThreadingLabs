@@ -1,0 +1,69 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <pthread.h>
+#include <string>
+
+struct ThreadData {
+    int start;
+    int end;
+    double sum;
+};
+
+void* calculatePi(void* arg) {
+    ThreadData* data = static_cast<ThreadData*>(arg);
+    double sum = 0.0;
+    int sign = 1;
+    for (int i = data->start; i < data->end; i++) {
+        double term = 1.0 / (2 * i + 1);
+        sum += sign * term;
+        sign *= -1;
+    }
+    data->sum = sum;
+
+    // Выделяем память для хранения частичной суммы
+    double* result = new double;
+    *result = data->sum;
+    return result;
+}
+
+int main(int argc, char* argv[]) {
+    setlocale(LC_ALL, "Russian");
+    if (argc != 2) {
+        std::cout << "Использование: программа <количество_потоков>" << std::endl;
+        return 1;
+    }
+
+    int numThreads = std::stoi(argv[1]);
+
+    pthread_t* threads = new pthread_t[numThreads];
+    ThreadData* threadData = new ThreadData[numThreads];
+
+    int iterations = 1000000;
+    int iterationsPerThread = iterations / numThreads;
+
+    for (int i = 0; i < numThreads; i++) {
+        threadData[i].start = i * iterationsPerThread;
+        threadData[i].end = (i + 1) * iterationsPerThread;
+        pthread_create(&threads[i], nullptr, calculatePi, &threadData[i]);
+    }
+
+    double sum = 0.0;
+    for (int i = 0; i < numThreads; i++) {
+        void* result;
+        pthread_join(threads[i], &result);
+        sum += *static_cast<double*>(result);
+        delete static_cast<double*>(result); // Освобождаем память после использования
+    }
+
+    double pi = 4 * sum;
+    std::cout << "Число Пи: " << pi << std::endl;
+
+    delete[] threads;
+    delete[] threadData;
+
+    // Ожидание завершения всех потоков
+    for (int i = 0; i < numThreads; i++) {
+        pthread_join(threads[i], nullptr);
+    }
+
+    return 0;
