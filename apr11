@@ -1,0 +1,41 @@
+#define HAVE_STRUCT_TIMESPEC
+#include <iostream>
+#include <thread>
+#include <pthread.h>
+#include <vector>
+#include <chrono>
+
+pthread_mutex_t mutex1;
+pthread_mutex_t mutex2;
+
+void printText(std::string threadName, pthread_mutex_t* myMutex, pthread_mutex_t* otherMutex) {
+    for (int i = 0; i < 5; i++) {
+        pthread_mutex_lock(myMutex);  // Блокировка своего мьютекса
+        std::cout << " String # " << i + 1 << "  " << threadName << std::endl;
+        pthread_mutex_unlock(otherMutex);  // Разблокировка мьютекса другого потока
+    }
+}
+
+int main() {
+    // Инициализация мьютексов
+    pthread_mutex_init(&mutex1, nullptr);
+    pthread_mutex_init(&mutex2, nullptr);
+
+    // Блокировка второго мьютекса перед запуском потоков
+    pthread_mutex_lock(&mutex2);
+
+    // Создание потока
+    std::thread thread2(printText, "2-nd thread", &mutex2, &mutex1);
+
+    // Основной поток печатает текст
+    printText("main", &mutex1, &mutex2);
+
+    // Ожидание завершения второго потока
+    thread2.join();
+
+    // Уничтожение мьютексов
+    pthread_mutex_destroy(&mutex1);
+    pthread_mutex_destroy(&mutex2);
+
+    return 0;
+}
